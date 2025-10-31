@@ -9,14 +9,12 @@ const rtdb = admin.database();
 
 // Twilio setup
 const client = twilio(process.env.TWILIO_SID, process.env.TWILIO_AUTH_TOKEN);
-console.log(process.env.TWILIO_SID , process.env.TWILIO_AUTH_TOKEN , process.env.TWILIO_PHONE)
-// Helper for time formatting
-const padZero = (num) => (num < 10 ? `0${num}` : `${num}`);
 
 const checkMedicineTime = async () => {
   const now = new Date();
-  const timeNow = `${padZero(now.getHours())}:${padZero(now.getMinutes())}`;
-  console.log(`⏰ [Cron] Checking medicines at: ${timeNow}`);
+  const moment = require('moment-timezone');
+  const timeNow = moment().tz('Asia/Kolkata').format('HH:mm');
+  console.log(`[Cron] Checking medicines at: ${timeNow}`);
 
   try {
     const snapshot = await db.collection("medicines").get();
