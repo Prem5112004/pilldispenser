@@ -302,7 +302,6 @@ app.post("/api/medicines/add", async (req, res) => {
 app.delete('/api/medicines/:id', async (req, res) => {
   try {
     const medicineId = req.params.id;
-    const patient = await getDocById("patients", {patientId});
     const medDoc = await getDocById("medicines", medicineId);
     if (!medDoc) return res.status(404).json({ message: "Medicine not found" });
 
@@ -332,7 +331,7 @@ app.delete('/api/medicines/:id', async (req, res) => {
     }
 
     res.json({ message: "Medicine deleted successfully" });
-    await logActivity(doctorId, `Deleted medicine ${medDoc.name} for (${patient.name})`);
+    await logActivity(doctorId, `Deleted medicine ${medDoc.name}`);
 
   } catch (err) {
     res.status(500).json({ message: err.message });
