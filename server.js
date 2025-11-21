@@ -111,9 +111,6 @@ app.get('/api/activity-log/:doctorId', async (req, res) => {
         timestamp: log.timestamp.toDate ? log.timestamp.toDate().toISOString() : log.timestamp
       }));
     res.json(logs);
-
-
-    res.json(logs);
   } catch (error) {
     console.error("Error fetching activity log:", error);
     res.status(500).json({ message: error.message || "Server error" });
