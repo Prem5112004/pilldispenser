@@ -250,7 +250,7 @@ app.get("/api/medicines/:patientId", async (req, res) => {
 app.post("/api/medicines/add", async (req, res) => {
   try {
     const { name, scheduledTime, patientId } = req.body;
-
+    const patient = await getDocById("patients", {patientId});
     const slotRef = db.collection("slots").doc(patientId);
     const slotDoc = await slotRef.get();
     if (!slotDoc.exists) return res.status(404).json({ message: "Slots not found" });
@@ -285,6 +285,7 @@ app.post("/api/medicines/add", async (req, res) => {
       medicine: name,
       count: 0
     });
+    await logActivity(doctorId, `Added medicine ${name} to (${patient.name})`);
 
     res.json({
       id,
@@ -301,7 +302,7 @@ app.post("/api/medicines/add", async (req, res) => {
 app.delete('/api/medicines/:id', async (req, res) => {
   try {
     const medicineId = req.params.id;
-
+    const patient = await getDocById("patients", {patientId});
     const medDoc = await getDocById("medicines", medicineId);
     if (!medDoc) return res.status(404).json({ message: "Medicine not found" });
 
@@ -331,6 +332,7 @@ app.delete('/api/medicines/:id', async (req, res) => {
     }
 
     res.json({ message: "Medicine deleted successfully" });
+    await logActivity(doctorId, `Deleted medicine ${medDoc.name} for (${patient.name})`);
 
   } catch (err) {
     res.status(500).json({ message: err.message });
