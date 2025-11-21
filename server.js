@@ -58,16 +58,23 @@ async function logActivity(doctorId, message) {
 // Register doctor
 app.post('/api/doctors/register', async (req, res) => {
   try {
-    const { id, name, password } = req.body;
+    const { id, name, password, phoneno, specialty } = req.body;
+    if (!id || !name || !password || !phoneno || !specialty) {
+      return res.status(400).json({ message: "All fields are required." });
+    }
     const docRef = db.collection('doctors').doc(id);
     const doc = await docRef.get();
-    if (doc.exists) return res.status(400).json({ message: 'Doctor already exists' });
-    await docRef.set({ id, name, password });
+    if (doc.exists) {
+      return res.status(400).json({ message: 'Doctor already exists' });
+    }
+    await docRef.set({id, name, password, phoneno, specialty});
     res.json({ message: 'Doctor registered' });
   } catch (err) {
+    console.error("❌ ERROR IN REGISTER:", err);
     res.status(500).json({ message: err.message });
   }
 });
+
 
 // Login doctor
 app.post('/api/doctors/login', async (req, res) => {
@@ -110,6 +117,9 @@ app.get('/api/activity-log/:doctorId', async (req, res) => {
         message: log.message,
         timestamp: log.timestamp.toDate ? log.timestamp.toDate().toISOString() : log.timestamp
       }));
+    res.json(logs);
+
+
     res.json(logs);
   } catch (error) {
     console.error("Error fetching activity log:", error);
@@ -250,7 +260,7 @@ app.get("/api/medicines/:patientId", async (req, res) => {
 app.post("/api/medicines/add", async (req, res) => {
   try {
     const { name, scheduledTime, patientId } = req.body;
-    const patient = await getDocById("patients", {patientId});
+
     const slotRef = db.collection("slots").doc(patientId);
     const slotDoc = await slotRef.get();
     if (!slotDoc.exists) return res.status(404).json({ message: "Slots not found" });
@@ -285,13 +295,18 @@ app.post("/api/medicines/add", async (req, res) => {
       medicine: name,
       count: 0
     });
-    await logActivity(doctorId, `Added medicine ${name} to (${patient.name})`);
 
     res.json({
       id,
       slot: slotAssigned,
       message: `Medicine scheduled in ${slotAssigned}`
     });
+    
+    const patient = await getDocById("patients", patientId);
+    await logActivity(
+      patient.doctorId,
+      `Added medicine ${name} for patient ${patient.name} (${patientId})`
+    );
 
   } catch (err) {
     res.status(500).json({ message: err.message });
@@ -302,6 +317,7 @@ app.post("/api/medicines/add", async (req, res) => {
 app.delete('/api/medicines/:id', async (req, res) => {
   try {
     const medicineId = req.params.id;
+
     const medDoc = await getDocById("medicines", medicineId);
     if (!medDoc) return res.status(404).json({ message: "Medicine not found" });
 
@@ -331,8 +347,12 @@ app.delete('/api/medicines/:id', async (req, res) => {
     }
 
     res.json({ message: "Medicine deleted successfully" });
-    await logActivity(doctorId, `Deleted medicine ${medDoc.name}`);
 
+    const patient = await getDocById("patients", medDoc.patientId);
+    await logActivity(
+      patient.doctorId,
+      `Deleted medicine ${medDoc.name} for patient ${patient.name} (${medDoc.patientId})`
+    );
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
